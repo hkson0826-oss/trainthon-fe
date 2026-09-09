@@ -1,0 +1,16 @@
+---
+description: Visual contract — read DESIGN.md before any UI work
+globs: ["**/*.tsx", "**/*.jsx", "**/*.css", "**/*.html", "**/DESIGN.md"]
+alwaysApply: true
+---
+
+Before generating or changing any visual UI, read `DESIGN.md` at the repository root (Google DESIGN.md format, lint with `npx designmd lint DESIGN.md`).
+
+Rules:
+
+- Use only colors, typography, spacing, and radius tokens from `DESIGN.md`.
+- Match component tokens exactly, including hover/active variants and 44×44px targets.
+- Do not add a hex, gradient, shadow, font, or spacing value that `DESIGN.md` does not define.
+- Follow Overview, Components, and Do's and Don'ts in `DESIGN.md`.
+- Product, money, and API rules stay in `PRODUCT_CONTRACT.md` and `FE_MASTER.md`; do not restyle those contracts away.
+- When in doubt, change `DESIGN.md` first (then `npm run design:lint`), do not invent tokens in code.

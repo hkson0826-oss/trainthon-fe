@@ -1,0 +1,15 @@
+{
+  "name": "trainthon-fe",
+  "private": true,
+  "description": "Lumina / Trainthon frontend. Visual identity is DESIGN.md (Google design.md format).",
+  "scripts": {
+    "design:lint": "designmd lint DESIGN.md",
+    "design:export": "designmd export --format css-tailwind DESIGN.md"
+  },
+  "devDependencies": {
+    "@google/design.md": "0.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
