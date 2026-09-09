@@ -1,4 +1,13 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+.map-frame { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid #cbd5e1; }
+.incident-map { height: 380px; width: 100%; z-index: 0; background: #e2e8f0; }
+.map-loading { position: absolute; top: 40%; width: 100%; text-align: center; }
+.map-error { padding: 12px; background: #fff; font-size: 14px; }
+.incident-map-pin span { display: block; width: 28px; height: 28px; background: #4338ca; border: 3px solid white; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 2px 6px #0005; }
+.map-detail-link { display: inline-block; padding: 10px 0; color: #4338ca !important; font-weight: 600; }
+.leaflet-container { font-family: inherit; }
 
 @theme {
   --color-primary: #4338ca;

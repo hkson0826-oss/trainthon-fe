@@ -13,8 +13,9 @@ import { seoulLocalToIso, todayParts } from '@/lib/dates';
 import { INCIDENT_TYPE_LABEL } from '@/lib/status';
 import { AppBar, BottomActionBar, Shell } from '@/components/AppChrome';
 import { RequireRole } from '@/components/RequireRole';
+import { IncidentMap } from '@/components/IncidentMap';
 import { ApiError } from '@/types/api';
-import type { IncidentType } from '@/types/api';
+import type { IncidentType, IncidentLocation } from '@/types/api';
 
 const DAMAGE_CHIPS = ['우측 후면', '좌측 후면', '전면', '후면', '측면', '범퍼'];
 
@@ -34,10 +35,14 @@ function NewIncidentForm() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoMessage, setPhotoMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [location, setLocation] = useState<IncidentLocation | null>(null);
+  const [locationMessage, setLocationMessage] = useState('');
+  const [locating, setLocating] = useState(false);
+  const [focus, setFocus] = useState<{ lat: number; lng: number } | null>(null);
   const form = useForm<IncidentFormValues>({
     resolver: zodResolver(incidentFormSchema),
     defaultValues: {
-      placeId: 'place-a',
+      placeId: '',
       type: 'CONTACT',
       date: defaults.date,
       start: defaults.start,
@@ -55,6 +60,10 @@ function NewIncidentForm() {
   const damageArea = form.watch('damageArea');
 
   async function onSubmit(values: IncidentFormValues) {
+    if (!location || !location.name.trim() || !location.address.trim()) {
+      setLocationMessage('지도에서 사고 위치를 선택하고 장소명과 주소를 입력해 주세요.');
+      return;
+    }
     setBusy(true);
     setPhotoMessage(null);
     try {
@@ -64,7 +73,8 @@ function NewIncidentForm() {
         paths.push(signed.objectPath);
       }
       const created = await api.createIncident({
-        placeId: values.placeId,
+        ...(values.placeId ? { placeId: values.placeId } : {}),
+        location,
         type: values.type,
         occurredFrom: seoulLocalToIso(values.date, values.start),
         occurredTo: seoulLocalToIso(values.date, values.end),
@@ -78,7 +88,7 @@ function NewIncidentForm() {
       if (error instanceof ApiError) {
         Object.entries(error.fieldErrors).forEach(([field, message]) => form.setError(field as keyof IncidentFormValues, { message }));
         setPhotoMessage(error.message);
-      }
+      } else setPhotoMessage(error instanceof Error ? error.message : '신고를 저장하지 못했습니다. 다시 시도해 주세요.');
     } finally {
       setBusy(false);
     }
@@ -91,13 +101,45 @@ function NewIncidentForm() {
         <label className="typo-label" htmlFor="placeId">
           사고 장소
         </label>
-        <select id="placeId" className="field" {...form.register('placeId')}>
+        <select id="placeId" className="field" {...form.register('placeId', { onChange: (event) => {
+          const place = places.find((p) => p.id === event.target.value);
+          if (place && place.lat !== null && place.lng !== null) {
+            setLocation({ name: place.name, address: place.address, lat: place.lat, lng: place.lng });
+            setFocus({ lat: place.lat, lng: place.lng });
+            setLocationMessage('');
+          } else setLocation(null);
+        } })}>
+          <option value="">지도에서 직접 선택</option>
           {places.map((place) => (
             <option key={place.id} value={place.id}>
               {place.name}
             </option>
           ))}
         </select>
+        <p className="typo-sm">지도에서 사고 지점을 눌러 주세요. 저장한 위치는 로그인한 모든 사용자에게 표시됩니다.</p>
+        <IncidentMap selected={location} focus={focus} onSelect={(point) => {
+          form.setValue('placeId', '');
+          setLocation((previous) => ({ name: previous?.name ?? '', address: previous?.address ?? '', ...point }));
+          setLocationMessage('');
+        }} />
+        <button type="button" className="btn btn-secondary" disabled={locating} onClick={() => {
+          if (!navigator.geolocation) { setLocationMessage('현재 위치를 지원하지 않는 브라우저입니다. 지도에서 선택해 주세요.'); return; }
+          setLocating(true);
+          navigator.geolocation.getCurrentPosition(({ coords }) => {
+            const point = { lat: coords.latitude, lng: coords.longitude };
+            form.setValue('placeId', '');
+            setLocation((previous) => ({ name: previous?.name ?? '', address: previous?.address ?? '', ...point }));
+            setFocus(point); setLocating(false); setLocationMessage('');
+          }, () => { setLocating(false); setLocationMessage('현재 위치를 확인하지 못했습니다. 지도에서 직접 선택해 주세요.'); }, { timeout: 10000, maximumAge: 60000 });
+        }}>{locating ? '현재 위치 확인 중…' : '현재 위치로 이동'}</button>
+        {location ? <>
+          <p className="typo-sm">선택한 위치: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}</p>
+          <label className="typo-label" htmlFor="locationName">사고 장소명</label>
+          <input id="locationName" className="field" maxLength={200} value={location.name} onChange={(e) => setLocation({ ...location, name: e.target.value })} placeholder="예: 시청 앞 공영주차장" />
+          <label className="typo-label" htmlFor="locationAddress">주소 또는 상세 위치</label>
+          <input id="locationAddress" className="field" maxLength={500} value={location.address} onChange={(e) => setLocation({ ...location, address: e.target.value })} placeholder="예: 서울시 중구 세종대로 110, 주차장 입구" />
+        </> : null}
+        {locationMessage ? <p className="field-error" role="alert">{locationMessage}</p> : null}
 
         <p className="typo-label">사고 유형</p>
         <div className="flex flex-wrap gap-sm">

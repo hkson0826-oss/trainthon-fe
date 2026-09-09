@@ -5,6 +5,9 @@ import type {
   AppConfig,
   CandidateDto,
   IncidentDetail,
+  IncidentLocation,
+  MapBounds,
+  MapIncident,
   IncidentType,
   NotificationDto,
   Place,
@@ -59,6 +62,8 @@ export const api = {
   config: (): Promise<AppConfig> => (useMock() ? Promise.resolve(mock.getConfig()) : realFetch<AppConfig>('/config')),
   me: (): Promise<Profile> => (useMock() ? Promise.resolve(mock.getMe()) : realFetch<Profile>('/me')),
   places: (): Promise<Place[]> => (useMock() ? Promise.resolve(mock.listPlaces()) : realFetch<Place[]>('/places')),
+  mapIncidents: (bounds?: MapBounds): Promise<{ items: MapIncident[]; hasMore: boolean }> =>
+    useMock() ? Promise.resolve(mock.listMapIncidents(bounds)) : realFetch(`/incidents/map${bounds ? `?${new URLSearchParams(Object.entries(bounds).map(([k, v]) => [k, String(v)]))}` : ''}`),
   myIncidents: (): Promise<IncidentDetail[]> =>
     useMock() ? Promise.resolve(mock.listMyIncidents()) : realFetch<IncidentDetail[]>('/me/incidents'),
   incident: (id: string): Promise<IncidentDetail> =>
@@ -73,7 +78,8 @@ export const api = {
   deleteVisit: (id: string): Promise<void> =>
     useMock() ? Promise.resolve(mock.deleteVisit(id)) : realFetch<void>(`/me/visits/${id}`, { method: 'DELETE' }),
   createIncident: (body: {
-    placeId: string;
+    placeId?: string;
+    location?: IncidentLocation;
     type: IncidentType;
     occurredFrom: string;
     occurredTo: string;

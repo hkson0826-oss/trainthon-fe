@@ -51,8 +51,19 @@ export interface Place {
   name: string;
   kind: 'PARKING_LOT' | 'APARTMENT' | 'BUILDING';
   address: string;
-  lat: number;
-  lng: number;
+  lat: number | null;
+  lng: number | null;
+}
+
+export interface IncidentLocation { name: string; address: string; lat: number; lng: number }
+export interface MapBounds { south: number; north: number; west: number; east: number }
+export interface MapIncident {
+  id: string;
+  place: Place;
+  type: IncidentType;
+  status: IncidentStatus;
+  occurredFrom: string;
+  occurredTo: string;
 }
 
 export interface Vehicle {
@@ -102,6 +113,8 @@ export interface IncidentDetail {
   occurredTo: string;
   vehicle: Vehicle;
   description: string;
+  descriptionSummary?: string;
+  masked?: boolean;
   status: IncidentStatus;
   matchedWitnessCount: number;
   photos: PhotoDto[];

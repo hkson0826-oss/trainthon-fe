@@ -38,7 +38,8 @@ function YIncident() {
           <p className="typo-body">
             {incident.vehicle.color} {incident.vehicle.model} · {incident.vehicle.damageArea}
           </p>
-          <p className="typo-body">{incident.description}</p>
+          <p className="typo-body">{incident.description ?? incident.descriptionSummary}</p>
+          <Link href={`/incidents/${id}`} className="btn btn-secondary">지도에서 사고 위치 보기</Link>
           {incident.photos.map((photo) =>
             photo.url ? (
               // eslint-disable-next-line @next/next/no-img-element

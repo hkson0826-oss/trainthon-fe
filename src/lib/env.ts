@@ -1,4 +1,5 @@
 export const env = {
+  mapTileUrl: process.env.NEXT_PUBLIC_MAP_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
   apiBase: process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001/api/v1',
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',

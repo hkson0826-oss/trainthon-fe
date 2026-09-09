@@ -34,6 +34,7 @@ export function AppBar({ title, backHref }: { title: string; backHref?: string }
           <span className="typo-label text-primary">Lumina</span>
         )}
         <h1 className="typo-label min-w-0 flex-1">{title}</h1>
+        {user ? <Link href="/map" className="btn btn-secondary" style={{ width: 'auto' }} aria-label="신고 지도">지도</Link> : null}
         {user && env.demoMode ? (
           <button
             type="button"

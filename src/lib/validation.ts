@@ -3,7 +3,7 @@ import { PHOTO_MAX_BYTES, PHOTO_MAX_COUNT, VIDEO_MIN_SECONDS } from '@/lib/money
 
 export const incidentFormSchema = z
   .object({
-    placeId: z.string().min(1, '장소를 선택해 주세요.'),
+    placeId: z.string().optional(),
     type: z.enum(['HIT_AND_RUN', 'CONTACT', 'DAMAGE', 'OTHER']),
     date: z.string().min(1),
     start: z.string().min(1),

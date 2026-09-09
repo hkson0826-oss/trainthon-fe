@@ -17,6 +17,9 @@ import type {
   AppConfig,
   CandidateDto,
   IncidentDetail,
+  IncidentLocation,
+  MapBounds,
+  MapIncident,
   IncidentType,
   NotificationDto,
   Place,
@@ -175,6 +178,7 @@ export function setSessionUserId(id: string | null) {
   } catch {
     /* ignore */
   }
+  listeners.forEach((fn) => fn());
 }
 
 function requireUser(): Profile {
@@ -261,7 +265,8 @@ function rangesOverlap(fromA: number, toA: number, fromB: number, toB: number) {
 }
 
 export function createIncident(input: {
-  placeId: string;
+  placeId?: string;
+  location?: IncidentLocation;
   type: IncidentType;
   occurredFrom: string;
   occurredTo: string;
@@ -285,7 +290,7 @@ export function createIncident(input: {
   if (input.photoObjectPaths.length > PHOTO_MAX_COUNT) {
     throw new ApiError(400, 'VALIDATION_ERROR', '사진은 최대 2장입니다.');
   }
-  const place = PLACE_A;
+  const place: Place = input.location ? { id: input.placeId ?? createId(), kind: 'BUILDING', ...input.location } : PLACE_A;
   const id = createId();
   const photos = input.photoObjectPaths.map((path, index) => {
     const photo = state.photos[path];
@@ -296,7 +301,7 @@ export function createIncident(input: {
 
   const visit = state.visits[0];
   const overlap =
-    visit &&
+    visit && input.placeId === PLACE_A.id &&
     rangesOverlap(from, to, new Date(visit.enteredAt).getTime(), new Date(visit.exitedAt).getTime());
   const matchedWitnessCount = overlap ? 1 : 0;
   const createdAt = nowIso();
@@ -355,17 +360,24 @@ export function listMyIncidents(): IncidentDetail[] {
   return state.incidents.filter((row) => row.requesterId === user.id);
 }
 
+export function listMapIncidents(bounds?: MapBounds): { items: MapIncident[]; hasMore: boolean } {
+  requireUser();
+  const rows = state.incidents.filter(({ place: p }) => p.lat !== null && p.lng !== null && (!bounds ||
+    (p.lat >= bounds.south && p.lat <= bounds.north && p.lng >= bounds.west && p.lng <= bounds.east)))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return { items: rows.slice(0, 200).map(({ id, place, type, status, occurredFrom, occurredTo }) => ({ id, place, type, status, occurredFrom, occurredTo })), hasMore: rows.length > 200 };
+}
+
 export function getIncident(id: string): IncidentDetail {
   const user = requireUser();
   const incident = state.incidents.find((row) => row.id === id);
   if (!incident) throw new ApiError(404, 'NOT_FOUND', '요청을 찾을 수 없습니다.');
-  const yNotified = state.notifications.some((n) => n.incidentId === id && n.type === 'WITNESS_REQUEST');
-  if (user.role === 'REQUESTER' && incident.requesterId !== user.id) throw new ApiError(404, 'NOT_FOUND', '요청을 찾을 수 없습니다.');
-  if (user.role === 'WITNESS' && !yNotified) throw new ApiError(404, 'NOT_FOUND', '요청을 찾을 수 없습니다.');
   const mine = state.submissions.find((s) => s.incidentId === id && s.witnessId === user.id);
-  if (user.role === 'WITNESS') {
+  if (incident.requesterId !== user.id && user.role !== 'OPERATOR') {
     return {
       ...incident,
+      requesterId: '',
+      masked: true,
       rewardPreview: { amount: DEMO_WITNESS_REWARD, mock: true },
       mySubmissionId: mine?.id ?? null,
       description: incident.description.slice(0, 180),

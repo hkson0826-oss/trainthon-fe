@@ -17,6 +17,7 @@ interface AuthValue {
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
+const subscribeHydration = () => () => {};
 
 function subscribe(callback: () => void) {
   return subscribeMock(callback);
@@ -27,6 +28,7 @@ function getSnapshot(): string | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const hydrated = useSyncExternalStore(subscribeHydration, () => true, () => false);
   const userId = useSyncExternalStore(subscribe, getSnapshot, () => null);
   const queryClient = useQueryClient();
   const mockUser = useMemo(() => {
@@ -90,8 +92,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (realMode) {
       await getSupabaseClient().auth.signOut({ scope: 'local' });
       setRealUser(null);
-    } else {
-      logoutMock();
     }
     await queryClient.clear();
     try {
@@ -114,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginDemo, switchAccount, logout }}>
+    <AuthContext.Provider value={{ user, loading: !hydrated || loading, loginDemo, switchAccount, logout }}>
       {children}
     </AuthContext.Provider>
   );
