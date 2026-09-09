@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { PageShell } from '@/components/layout/PageShell';
 import { Button } from '@/components/ui/Button';
@@ -15,35 +15,46 @@ export function PaymentReturnPage() {
   const queryStatus = params.get('status');
   const [message, setMessage] = useState('결제 결과를 확인하고 있어요');
   const [delayed, setDelayed] = useState(false);
-  const started = useRef(false);
   const payment = paymentId ? getPayment(paymentId) : null;
   const search = payment ? getSearch(payment.searchId) : null;
 
   useEffect(() => {
-    if (!paymentId || started.current) return;
-    started.current = true;
+    if (!paymentId) return;
+    let cancelled = false;
+    const existing = getPayment(paymentId);
+    if (existing?.status === 'PAID') {
+      const paidSearch = getSearch(existing.searchId);
+      if (paidSearch) navigate(`/searches/${paidSearch.id}`, { replace: true });
+      return;
+    }
+
     const delayHint = window.setTimeout(() => {
+      if (cancelled) return;
       setDelayed(true);
       setMessage('확인이 지연되고 있어요. 내 활동에서 다시 확인할 수 있어요.');
     }, 2500);
+
     const verify = window.setTimeout(() => {
+      if (cancelled) return;
       try {
         if (params.get('demoOutcome') === 'fail') {
           failDemoPayment(paymentId);
           setMessage('결제가 실패했어요. 다시 시도할 수 있어요.');
-        } else {
-          const next = confirmDemoPayment(paymentId);
-          if (next.status === 'PAID') {
-            setMessage('결제가 확인되어 탐색을 시작했어요.');
-            const paidSearch = getSearch(next.searchId);
-            if (paidSearch) navigate(`/searches/${paidSearch.id}`, { replace: true });
-          }
+          return;
+        }
+        const next = confirmDemoPayment(paymentId);
+        if (next.status === 'PAID') {
+          setMessage('결제가 확인되어 탐색을 시작했어요.');
+          const paidSearch = getSearch(next.searchId);
+          if (paidSearch) navigate(`/searches/${paidSearch.id}`, { replace: true });
         }
       } catch {
         setMessage('결제 상태를 확인하지 못했어요. 내 활동에서 다시 확인해 주세요.');
       }
     }, 1400);
+
     return () => {
+      cancelled = true;
       window.clearTimeout(delayHint);
       window.clearTimeout(verify);
     };
@@ -60,9 +71,30 @@ export function PaymentReturnPage() {
           ) : null}
           {payment ? <StatusBadge view={PAYMENT_STATUS[payment.status]} /> : <p className="caption">결제 정보를 찾지 못했어요.</p>}
           {delayed ? (
-            <Link className="btn btn-secondary" to="/activity">
-              내 활동에서 확인
-            </Link>
+            <>
+              <Link className="btn btn-secondary" to="/activity">
+                내 활동에서 확인
+              </Link>
+              {paymentId && payment?.status !== 'PAID' && payment?.status !== 'FAILED' ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    try {
+                      const next = confirmDemoPayment(paymentId);
+                      if (next.status === 'PAID') {
+                        const paidSearch = getSearch(next.searchId);
+                        if (paidSearch) navigate(`/searches/${paidSearch.id}`, { replace: true });
+                      }
+                    } catch {
+                      setMessage('결제 상태를 확인하지 못했어요. 내 활동에서 다시 확인해 주세요.');
+                    }
+                  }}
+                >
+                  다시 확인
+                </Button>
+              ) : null}
+            </>
           ) : null}
           {payment?.status === 'FAILED' && search ? (
             <Button type="button" onClick={() => navigate(`/searches/${search.id}/checkout`)}>
