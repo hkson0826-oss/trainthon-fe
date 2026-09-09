@@ -5,8 +5,8 @@ export const env = {
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
   kakaoEnabled: process.env.NEXT_PUBLIC_KAKAO_AUTH_ENABLED === 'true',
   demoMode: process.env.NEXT_PUBLIC_DEMO_MODE !== 'false',
-  requesterEmail: process.env.NEXT_PUBLIC_DEMO_REQUESTER_EMAIL || 'x@lumina.demo',
-  witnessEmail: process.env.NEXT_PUBLIC_DEMO_WITNESS_EMAIL || 'y@lumina.demo',
+  requesterEmail: process.env.NEXT_PUBLIC_DEMO_REQUESTER_EMAIL || 'demo.requester@lumina.local',
+  witnessEmail: process.env.NEXT_PUBLIC_DEMO_WITNESS_EMAIL || 'demo.witness@lumina.local',
   demoPassword: process.env.NEXT_PUBLIC_DEMO_ACCOUNT_PASSWORD || 'demo-password',
   useMockApi: process.env.NEXT_PUBLIC_USE_MOCK_API !== 'false',
 };

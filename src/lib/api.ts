@@ -15,6 +15,7 @@ import type {
   VisitDto,
 } from '@/types/api';
 import * as mock from '@/lib/mockStore';
+import { getAccessToken } from '@/lib/supabase';
 
 function useMock(): boolean {
   return env.useMockApi || !hasSupabase();
@@ -41,12 +42,13 @@ async function unwrap<T>(res: Response): Promise<T> {
 
 async function realFetch<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
   const requestId = crypto.randomUUID();
+  const accessToken = token ?? (await getAccessToken());
   const res = await fetch(`${env.apiBase}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
       'X-Request-Id': requestId,
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...(init.headers ?? {}),
     },
   });

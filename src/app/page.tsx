@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { env } from '@/lib/env';
 import { useAuth } from '@/lib/auth';
@@ -8,10 +9,20 @@ import { DemoBadge } from '@/components/AppChrome';
 export default function LandingPage() {
   const { loginDemo, user } = useAuth();
   const router = useRouter();
+  const [pendingRole, setPendingRole] = useState<'REQUESTER' | 'WITNESS' | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function start(role: 'REQUESTER' | 'WITNESS') {
-    const profile = await loginDemo(role);
-    router.push(profile.role === 'REQUESTER' ? '/x' : '/y');
+    setPendingRole(role);
+    setError(null);
+    try {
+      const profile = await loginDemo(role);
+      router.push(profile.role === 'REQUESTER' ? '/x' : '/y');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '데모 계정으로 진입하지 못했습니다.');
+    } finally {
+      setPendingRole(null);
+    }
   }
 
   return (
@@ -25,12 +36,14 @@ export default function LandingPage() {
       <DemoBadge>데모 · 실제 결제·송금 없음</DemoBadge>
       {env.demoMode ? (
         <div className="flex flex-col gap-md">
-          <button type="button" className="btn btn-primary" onClick={() => void start('REQUESTER')}>
-            X(요청자)로 시작
+          <button type="button" className="btn btn-primary" disabled={pendingRole !== null} onClick={() => void start('REQUESTER')}>
+            {pendingRole === 'REQUESTER' ? '피해자 계정으로 로그인 중…' : '피해자로 시작'}
           </button>
-          <button type="button" className="btn btn-secondary" onClick={() => void start('WITNESS')}>
-            Y(제보자)로 시작
+          <button type="button" className="btn btn-secondary" disabled={pendingRole !== null} onClick={() => void start('WITNESS')}>
+            {pendingRole === 'WITNESS' ? '목격자 계정으로 로그인 중…' : '목격자로 시작'}
           </button>
+          <p className="typo-sm">데모 중 상단의 역할 전환 버튼으로 두 계정을 오갈 수 있습니다.</p>
+          {error ? <p className="field-error" role="alert">{error}</p> : null}
         </div>
       ) : null}
       <button type="button" className="btn btn-secondary" disabled={!env.kakaoEnabled}>

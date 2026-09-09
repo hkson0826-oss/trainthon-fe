@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -12,6 +13,8 @@ import { NOTIFICATION_POLL_MS } from '@/lib/money';
 export function AppBar({ title, backHref }: { title: string; backHref?: string }) {
   const router = useRouter();
   const { user, switchAccount } = useAuth();
+  const [switching, setSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
   const { data: notifications = [] } = useQuery({
     queryKey: keys.notifications(user?.id),
     queryFn: api.notifications,
@@ -34,14 +37,24 @@ export function AppBar({ title, backHref }: { title: string; backHref?: string }
         {user && env.demoMode ? (
           <button
             type="button"
-            className="btn btn-secondary"
+            className="btn btn-secondary role-switch"
             style={{ width: 'auto' }}
+            disabled={switching}
+            aria-label={user.role === 'REQUESTER' ? '목격자 계정으로 전환' : '피해자 계정으로 전환'}
             onClick={async () => {
-              const next = await switchAccount();
-              router.replace(next.role === 'REQUESTER' ? '/x' : '/y');
+              setSwitching(true);
+              setSwitchError(null);
+              try {
+                const next = await switchAccount();
+                router.replace(next.role === 'REQUESTER' ? '/x' : '/y');
+              } catch (cause) {
+                setSwitchError(cause instanceof Error ? cause.message : '역할을 전환하지 못했습니다.');
+              } finally {
+                setSwitching(false);
+              }
             }}
           >
-            계정 전환 · {user.role === 'REQUESTER' ? 'X' : 'Y'}
+            {switching ? '전환 중…' : user.role === 'REQUESTER' ? '목격자로 전환' : '피해자로 전환'}
           </button>
         ) : null}
         {user ? (
@@ -51,6 +64,7 @@ export function AppBar({ title, backHref }: { title: string; backHref?: string }
           </Link>
         ) : null}
       </div>
+      {switchError ? <p className="field-error mx-auto mt-sm w-full max-w-[640px]" role="alert">{switchError}</p> : null}
     </header>
   );
 }

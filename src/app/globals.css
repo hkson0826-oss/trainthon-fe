@@ -155,6 +155,20 @@ textarea {
   color: var(--color-on-danger);
 }
 
+.role-switch {
+  flex-shrink: 0;
+  font-size: 14px;
+  padding-inline: var(--spacing-md);
+}
+
+@media (max-width: 389px) {
+  .role-switch {
+    max-width: 104px;
+    white-space: normal;
+    line-height: 1.25;
+  }
+}
+
 .field {
   width: 100%;
   min-height: 44px;
