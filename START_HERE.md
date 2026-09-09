@@ -2,6 +2,8 @@
 
 이 폴더는 아이디어와 개발 지시 명세를 담는다. 앱 소스코드나 실제 결제 연동이 구현된 상태는 아니다.
 
+시각 토큰·컴포넌트 규칙은 루트 [DESIGN.md](./DESIGN.md)가 담당한다. UI를 구현하는 에이전트는 `PRODUCT_CONTRACT.md` / `FE_MASTER.md`와 함께 이 파일을 읽고, 임의 색·폰트·간격을 만들지 않는다.
+
 ## 문서 구성
 
 1. [PRODUCT_CONTRACT.md](./PRODUCT_CONTRACT.md): 사업 구조, MVP 가정, 공통 API·데이터·상태·금전 불변식. 두 에이전트가 함께 읽는다.
